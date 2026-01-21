@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"kiroAgent.trustedCommands": [
+			"",
+			"cargo *",
+			"git *"
+		]
+	}
+}
