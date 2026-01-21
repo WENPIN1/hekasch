@@ -77,10 +77,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         
         // 如果這一頁有超出指定時間的新聞，停止抓取
         if has_old_news {
-            debug!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
+            info!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
             should_continue = false;
         } else if valid_count == 0 {
-            debug!("  本頁無有效新聞，停止抓取\n");
+            info!("  本頁無有效新聞，停止抓取\n");
             should_continue = false;
         } else {
             page_index += 1;
@@ -123,7 +123,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             
             // 每 10 則新聞存檔一次
             if (i + 1) % 10 == 0 || (i + 1) == total_count {
-                debug!("  💾 儲存進度 ({}/{})...", i + 1, total_count);
+                info!("  💾 儲存進度 ({}/{})...", i + 1, total_count);
                 if let Err(e) = generate_markdown_file(&all_news_items, &now) {
                     debug!("  ⚠️  存檔失敗: {}", e);
                 }
@@ -486,7 +486,7 @@ fn generate_markdown_file(news_items: &[NewsItem], now: &DateTime<Local>) -> Res
     markdown.push_str("**資料來源**: [IEK 產業情報網](https://ieknet.iek.org.tw/ieknews/Default.aspx)\n");
     
     std::fs::write(&filename, markdown)?;
-    info!("\n✅ 已將結果儲存至: {}", filename);
+    debug!("\n✅ 已將結果儲存至: {}", filename);
     
     Ok(())
 }

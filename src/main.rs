@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             format!("https://ieknet.iek.org.tw/ieknews/Default.aspx?currentPageIndex={}", page_index)
         };
 
-        debug!("正在抓取第 {} 頁...", page_index);
+        info!("正在抓取第 {} 頁...", page_index);
         
         let response = client.get(&url).send().await?;
         let html_content = response.text().await?;
@@ -77,10 +77,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         
         // 如果這一頁有超出指定時間的新聞，停止抓取
         if has_old_news {
-            debug!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
+            info!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
             should_continue = false;
         } else if valid_count == 0 {
-            debug!("  本頁無有效新聞，停止抓取\n");
+            info!("  本頁無有效新聞，停止抓取\n");
             should_continue = false;
         } else {
             page_index += 1;
@@ -538,10 +538,10 @@ fn generate_html_file(news_items: &[NewsItem], now: &DateTime<Local>) -> Result<
         ));
         
         // 只在免費新聞時顯示 badge
-        if item.is_free {
-            html.push_str(r#"
-            <span class="badge badge-free">免費</span>"#);
-        }
+        // if item.is_free {
+        //     html.push_str(r#"
+        //     <span class="badge badge-free">免費</span>"#);
+        // }
         
         // 顯示媒體、日期、瀏覽數
         if !item.media.is_empty() {
