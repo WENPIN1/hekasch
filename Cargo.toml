@@ -1,0 +1,19 @@
+[package]
+name = "ieknet_scraper"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ieknet_scraper"
+path = "src/main.rs"
+
+[[bin]]
+name = "ieknet_markdown"
+path = "src/markdown.rs"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["blocking"] }
+scraper = "0.20"
+chrono = "0.4"
+tokio = { version = "1", features = ["full"] }
+regex = "1.10"
