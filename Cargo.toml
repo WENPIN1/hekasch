@@ -17,3 +17,5 @@ scraper = "0.20"
 chrono = "0.4"
 tokio = { version = "1", features = ["full"] }
 regex = "1.10"
+log = "0.4"
+env_logger = "0.11"

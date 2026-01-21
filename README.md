@@ -29,14 +29,18 @@
 1. 編譯並執行程式：
 
 ```bash
-cargo run --bin ieknet_scraper
+# 使用 info level logging（推薦）
+RUST_LOG=info cargo run --bin ieknet_scraper
+
+# 或使用 debug level（會顯示更多細節）
+RUST_LOG=debug cargo run --bin ieknet_scraper
 ```
 
 2. 或者先編譯再執行：
 
 ```bash
 cargo build --release --bin ieknet_scraper
-./target/release/ieknet_scraper
+RUST_LOG=info ./target/release/ieknet_scraper
 ```
 
 ### Markdown 版本
@@ -44,15 +48,26 @@ cargo build --release --bin ieknet_scraper
 1. 編譯並執行程式：
 
 ```bash
-cargo run --bin ieknet_markdown
+# 使用 info level logging（推薦）
+RUST_LOG=info cargo run --bin ieknet_markdown
+
+# 或使用 debug level（會顯示更多細節）
+RUST_LOG=debug cargo run --bin ieknet_markdown
 ```
 
 2. 或者先編譯再執行：
 
 ```bash
 cargo build --release --bin ieknet_markdown
-./target/release/ieknet_markdown
+RUST_LOG=info ./target/release/ieknet_markdown
 ```
+
+### Logging 等級說明
+
+- `RUST_LOG=info` - 顯示主要進度訊息（推薦）
+- `RUST_LOG=debug` - 顯示詳細的除錯訊息
+- `RUST_LOG=ieknet_scraper=info` - 只顯示程式本身的 info 訊息，過濾依賴庫的訊息
+- `RUST_LOG=ieknet_markdown=info` - 只顯示 markdown 版本的 info 訊息
 
 ## 輸出範例
 

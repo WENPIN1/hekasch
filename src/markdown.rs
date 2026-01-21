@@ -6,6 +6,7 @@ use tokio::time::sleep;
 use std::time::Duration as StdDuration;
 use std::path::Path;
 use std::fs;
+use log::{debug, info};
 
 #[derive(Debug)]
 struct NewsItem {
@@ -23,10 +24,13 @@ struct NewsItem {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // 初始化 logger
+    env_logger::init();
+    
     // 配置：設定要抓取的時間範圍（小時）
     const HOURS_RANGE: i64 = 96; // 測試時使用 1 小時，正式使用時改為 96
     
-    println!("正在抓取 IEK 產業情報網最近 {} 小時內的新聞...\n", HOURS_RANGE);
+    info!("正在抓取 IEK 產業情報網最近 {} 小時內的新聞...\n", HOURS_RANGE);
 
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -45,7 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             format!("https://ieknet.iek.org.tw/ieknews/Default.aspx?currentPageIndex={}", page_index)
         };
 
-        println!("正在抓取第 {} 頁...", page_index);
+        debug!("正在抓取第 {} 頁...", page_index);
         
         let response = client.get(&url).send().await?;
         let html_content = response.text().await?;
@@ -55,14 +59,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let valid_count = news_items.len();
         all_news_items.extend(news_items);
         
-        println!("  找到 {} 則 {} 小時內的新聞", valid_count, HOURS_RANGE);
+        debug!("  找到 {} 則 {} 小時內的新聞", valid_count, HOURS_RANGE);
         
         // 如果這一頁有超出指定時間的新聞，停止抓取
         if has_old_news {
-            println!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
+            debug!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
             should_continue = false;
         } else if valid_count == 0 {
-            println!("  本頁無有效新聞，停止抓取\n");
+            debug!("  本頁無有效新聞，停止抓取\n");
             should_continue = false;
         } else {
             page_index += 1;
@@ -71,17 +75,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 輸出結果到終端
     if all_news_items.is_empty() {
-        println!("未找到最近 {} 小時內的新聞", HOURS_RANGE);
+        info!("未找到最近 {} 小時內的新聞", HOURS_RANGE);
     } else {
         let total_count = all_news_items.len();
-        println!("總共找到 {} 則最近 {} 小時內的新聞\n", total_count, HOURS_RANGE);
+        info!("總共找到 {} 則最近 {} 小時內的新聞\n", total_count, HOURS_RANGE);
         
         // 抓取每則新聞的詳細內容
-        println!("正在抓取新聞詳細內容...\n");
+        info!("正在抓取新聞詳細內容...\n");
         let mut i = 0;
         while i < total_count {
             let item = &mut all_news_items[i];
-            print!("  抓取第 {}/{} 則新聞詳細內容...", i + 1, total_count);
+            debug!("  抓取第 {}/{} 則新聞詳細內容...", i + 1, total_count);
             match fetch_news_detail(&client, &item.url).await {
                 Ok((detail_title, media, detail_date, views, detail_content, from_cache)) => {
                     item.detail_title = detail_title;
@@ -91,40 +95,40 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     item.detail_content = detail_content;
                     
                     if from_cache {
-                        println!(" ✓ (快取)");
+                        debug!(" ✓ (快取)");
                     } else {
-                        println!(" ✓");
+                        debug!(" ✓");
                         // 只有從網路抓取時才暫停 100 毫秒
                         sleep(StdDuration::from_millis(100)).await;
                     }
                 }
                 Err(e) => {
-                    println!(" ✗ (錯誤: {})", e);
+                    debug!(" ✗ (錯誤: {})", e);
                 }
             }
             
             // 每 10 則新聞存檔一次
             if (i + 1) % 10 == 0 || (i + 1) == total_count {
-                println!("  💾 儲存進度 ({}/{})...", i + 1, total_count);
+                debug!("  💾 儲存進度 ({}/{})...", i + 1, total_count);
                 if let Err(e) = generate_markdown_file(&all_news_items, &now) {
-                    println!("  ⚠️  存檔失敗: {}", e);
+                    debug!("  ⚠️  存檔失敗: {}", e);
                 }
             }
             
             i += 1;
         }
-        println!();
+        debug!("");
         
         for (i, item) in all_news_items.iter().enumerate() {
-            println!("【新聞 {}】", i + 1);
-            println!("標題: {}", item.title);
-            println!("連結: {}", item.url);
-            println!("日期: {}", item.date);
-            println!("類型: {}", if item.is_free { "免費" } else { "付費" });
+            debug!("【新聞 {}】", i + 1);
+            debug!("標題: {}", item.title);
+            debug!("連結: {}", item.url);
+            debug!("日期: {}", item.date);
+            debug!("類型: {}", if item.is_free { "免費" } else { "付費" });
             if !item.content.is_empty() {
-                println!("摘要: {}", item.content);
+                debug!("摘要: {}", item.content);
             }
-            println!("{}", "-".repeat(80));
+            debug!("{}", "-".repeat(80));
         }
     }
 
@@ -443,7 +447,7 @@ fn generate_markdown_file(news_items: &[NewsItem], now: &DateTime<Local>) -> Res
     markdown.push_str("**資料來源**: [IEK 產業情報網](https://ieknet.iek.org.tw/ieknews/Default.aspx)\n");
     
     std::fs::write(&filename, markdown)?;
-    println!("\n✅ 已將結果儲存至: {}", filename);
+    info!("\n✅ 已將結果儲存至: {}", filename);
     
     Ok(())
 }
