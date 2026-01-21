@@ -41,6 +41,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut all_news_items = Vec::new();
     let mut page_index = 1;
     let mut should_continue = true;
+    
+    // 檢查輸出檔案是否已存在，並讀取第一筆 URL
+    let output_filename = format!("iek_news_{}.md", now.format("%Y-%m-%d"));
+    let existing_first_url = get_first_url_from_markdown(&output_filename);
 
     while should_continue {
         let url = if page_index == 1 {
@@ -55,6 +59,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let html_content = response.text().await?;
         
         let (news_items, has_old_news) = parse_news_with_check(&html_content, &cutoff_time)?;
+        
+        // 如果是第一頁且有新聞，檢查第一筆 URL 是否已存在
+        if page_index == 1 && !news_items.is_empty() {
+            if let Some(ref existing_url) = existing_first_url {
+                if news_items[0].url == *existing_url {
+                    info!("✓ 新聞資料已下載（第一筆 URL 相同），結束抓取");
+                    return Ok(());
+                }
+            }
+        }
         
         let valid_count = news_items.len();
         all_news_items.extend(news_items);
@@ -390,6 +404,31 @@ fn parse_cached_html(html: &str) -> Result<(String, String, String, String, Stri
         .unwrap_or_default();
 
     Ok((detail_title, media, detail_date, views, detail_content))
+}
+
+fn get_first_url_from_markdown(filename: &str) -> Option<String> {
+    // 如果檔案不存在，返回 None
+    if !Path::new(filename).exists() {
+        return None;
+    }
+    
+    // 讀取檔案內容
+    let content = match fs::read_to_string(filename) {
+        Ok(c) => c,
+        Err(_) => return None,
+    };
+    
+    // 使用正則表達式尋找第一個新聞項目的 URL
+    // 格式: ## 1. [標題](URL)
+    let re = Regex::new(r"##\s+1\.\s+\[.+?\]\((.+?)\)").unwrap();
+    
+    if let Some(captures) = re.captures(&content) {
+        if let Some(url_match) = captures.get(1) {
+            return Some(url_match.as_str().to_string());
+        }
+    }
+    
+    None
 }
 
 fn generate_markdown_file(news_items: &[NewsItem], now: &DateTime<Local>) -> Result<(), Box<dyn Error>> {
