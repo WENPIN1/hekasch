@@ -96,6 +96,9 @@ RUST_LOG=info ./target/release/ieknet_markdown
   ...
 
 ✅ 已將結果儲存至: iek_news_2026-01-21.html
+
+🧹 開始清理一週前的快取檔案...
+✅ 清理完成：刪除了 15 個檔案，釋放 45230 bytes 空間
 ```
 
 ### HTML 檔案
@@ -124,6 +127,25 @@ Markdown 版本會生成 `.md` 檔案（例如：`iek_news_2026-01-21.md`），�
 - 如果快取檔案已存在且有內容，會直接讀取快取，不會重新抓取
 - 快取檔案包含完整的 HTML 片段（標題、媒體、日期、瀏覽數、內容）
 - 使用快取時會顯示 "(快取)" 標記，且不會有 100ms 延遲
+
+### 自動清理舊快取
+
+程式支援自動清理一週前的快取檔案，透過環境變數 `REMOVE_OLD_NEWS` 控制：
+
+```bash
+# 啟用自動清理（刪除一週前的快取檔案）
+RUST_LOG=info REMOVE_OLD_NEWS=true cargo run --bin ieknet_scraper
+
+# 或 Markdown 版本
+RUST_LOG=info REMOVE_OLD_NEWS=true cargo run --bin ieknet_markdown
+```
+
+清理功能說明：
+- 只有當 `REMOVE_OLD_NEWS=true` 時才會執行清理
+- 自動刪除修改時間早於一週（7天）前的 `.html` 快取檔案
+- 在程式正常結束前執行清理
+- 顯示刪除的檔案數量和釋放的空間大小
+- 使用 `RUST_LOG=debug` 可查看每個被刪除檔案的詳細資訊
 
 ## 配置選項
 

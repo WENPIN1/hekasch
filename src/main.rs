@@ -149,6 +149,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 生成 HTML 檔案
     generate_html_file(&all_news_items, &now)?;
 
+    // 清理舊的快取檔案
+    cleanup_old_cache()?;
+
     Ok(())
 }
 
@@ -435,6 +438,77 @@ fn get_first_url_from_html(filename: &str) -> Option<String> {
     }
     
     None
+}
+
+fn cleanup_old_cache() -> Result<(), Box<dyn Error>> {
+    // 檢查環境變數
+    let should_remove = std::env::var("REMOVE_OLD_NEWS")
+        .unwrap_or_else(|_| "false".to_string())
+        .to_lowercase() == "true";
+    
+    if !should_remove {
+        debug!("環境變數 REMOVE_OLD_NEWS 未設定為 true，跳過清理舊快取");
+        return Ok(());
+    }
+    
+    info!("\n🧹 開始清理一週前的快取檔案...");
+    
+    let cache_dir = Path::new("news_cache");
+    if !cache_dir.exists() {
+        debug!("快取目錄不存在，無需清理");
+        return Ok(());
+    }
+    
+    let now = Local::now();
+    let one_week_ago = now - Duration::days(7);
+    
+    let mut removed_count = 0;
+    let mut total_size: u64 = 0;
+    
+    // 遍歷快取目錄中的所有檔案
+    for entry in fs::read_dir(cache_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        // 只處理 .html 檔案
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("html") {
+            // 取得檔案的修改時間
+            if let Ok(metadata) = fs::metadata(&path) {
+                if let Ok(modified) = metadata.modified() {
+                    let modified_datetime: DateTime<Local> = modified.into();
+                    
+                    // 如果檔案修改時間早於一週前，則刪除
+                    if modified_datetime < one_week_ago {
+                        let file_size = metadata.len();
+                        let filename = path.file_name().unwrap().to_string_lossy();
+                        
+                        match fs::remove_file(&path) {
+                            Ok(_) => {
+                                debug!("  ✓ 已刪除: {} (大小: {} bytes, 修改時間: {})", 
+                                    filename, 
+                                    file_size,
+                                    modified_datetime.format("%Y-%m-%d %H:%M:%S")
+                                );
+                                removed_count += 1;
+                                total_size += file_size;
+                            }
+                            Err(e) => {
+                                debug!("  ✗ 刪除失敗: {} (錯誤: {})", filename, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    if removed_count > 0 {
+        info!("✅ 清理完成：刪除了 {} 個檔案，釋放 {} bytes 空間", removed_count, total_size);
+    } else {
+        info!("✅ 清理完成：沒有需要刪除的舊檔案");
+    }
+    
+    Ok(())
 }
 
 fn generate_html_file(news_items: &[NewsItem], now: &DateTime<Local>) -> Result<(), Box<dyn Error>> {
