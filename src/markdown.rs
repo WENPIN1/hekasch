@@ -6,7 +6,7 @@ use tokio::time::sleep;
 use std::time::Duration as StdDuration;
 use std::path::Path;
 use std::fs;
-use log::{debug, info};
+use log::{debug, info, warn};
 
 #[derive(Debug)]
 struct NewsItem {
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 配置：設定要抓取的時間範圍（小時）
     const HOURS_RANGE: i64 = 96; // 測試時使用 1 小時，正式使用時改為 96
     
-    info!("正在抓取 IEK 產業情報網最近 {} 小時內的新聞...\n", HOURS_RANGE);
+    warn!("正在抓取 IEK 產業情報網最近 {} 小時內的新聞...\n", HOURS_RANGE);
 
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             format!("https://ieknet.iek.org.tw/ieknews/Default.aspx?currentPageIndex={}", page_index)
         };
 
-        debug!("正在抓取第 {} 頁...", page_index);
+        info!("正在抓取第 {} 頁...", page_index);
         
         let response = client.get(&url).send().await?;
         let html_content = response.text().await?;
@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if page_index == 1 && !news_items.is_empty() {
             if let Some(ref existing_url) = existing_first_url {
                 if news_items[0].url == *existing_url {
-                    info!("✓ 新聞資料已下載（第一筆 URL 相同），結束抓取");
+                    warn!("✓ 新聞資料已下載（第一筆 URL 相同），結束抓取");
                     return Ok(());
                 }
             }
@@ -73,14 +73,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let valid_count = news_items.len();
         all_news_items.extend(news_items);
         
-        debug!("  找到 {} 則 {} 小時內的新聞", valid_count, HOURS_RANGE);
+        info!("  找到 {} 則 {} 小時內的新聞", valid_count, HOURS_RANGE);
         
         // 如果這一頁有超出指定時間的新聞，停止抓取
         if has_old_news {
-            info!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
+            warn!("  發現超出 {} 小時的新聞，停止抓取\n", HOURS_RANGE);
             should_continue = false;
         } else if valid_count == 0 {
-            info!("  本頁無有效新聞，停止抓取\n");
+            warn!("  本頁無有效新聞，停止抓取\n");
             should_continue = false;
         } else {
             page_index += 1;
@@ -89,17 +89,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 輸出結果到終端
     if all_news_items.is_empty() {
-        info!("未找到最近 {} 小時內的新聞", HOURS_RANGE);
+        warn!("未找到最近 {} 小時內的新聞", HOURS_RANGE);
     } else {
         let total_count = all_news_items.len();
-        info!("總共找到 {} 則最近 {} 小時內的新聞\n", total_count, HOURS_RANGE);
+        warn!("總共找到 {} 則最近 {} 小時內的新聞\n", total_count, HOURS_RANGE);
         
         // 抓取每則新聞的詳細內容
-        info!("正在抓取新聞詳細內容...\n");
+        warn!("正在抓取新聞詳細內容...\n");
         let mut i = 0;
         while i < total_count {
             let item = &mut all_news_items[i];
-            debug!("  抓取第 {}/{} 則新聞詳細內容...", i + 1, total_count);
+            info!("  抓取第 {}/{} 則新聞詳細內容...", i + 1, total_count);
             match fetch_news_detail(&client, &item.url).await {
                 Ok((detail_title, media, detail_date, views, detail_content, from_cache)) => {
                     item.detail_title = detail_title;
@@ -123,9 +123,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             
             // 每 10 則新聞存檔一次
             if (i + 1) % 10 == 0 || (i + 1) == total_count {
-                info!("  💾 儲存進度 ({}/{})...", i + 1, total_count);
+                warn!("  💾 儲存進度 ({}/{})...", i + 1, total_count);
                 if let Err(e) = generate_markdown_file(&all_news_items, &now) {
-                    debug!("  ⚠️  存檔失敗: {}", e);
+                    info!("  ⚠️  存檔失敗: {}", e);
                 }
             }
             
@@ -134,15 +134,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         debug!("");
         
         for (i, item) in all_news_items.iter().enumerate() {
-            debug!("【新聞 {}】", i + 1);
-            debug!("標題: {}", item.title);
-            debug!("連結: {}", item.url);
-            debug!("日期: {}", item.date);
-            debug!("類型: {}", if item.is_free { "免費" } else { "付費" });
+            info!("【新聞 {}】", i + 1);
+            info!("標題: {}", item.title);
+            info!("連結: {}", item.url);
+            info!("日期: {}", item.date);
+            info!("類型: {}", if item.is_free { "免費" } else { "付費" });
             if !item.content.is_empty() {
-                debug!("摘要: {}", item.content);
+                info!("摘要: {}", item.content);
             }
-            debug!("{}", "-".repeat(80));
+            info!("{}", "-".repeat(80));
         }
     }
 
@@ -489,7 +489,7 @@ fn generate_markdown_file(news_items: &[NewsItem], now: &DateTime<Local>) -> Res
     markdown.push_str("**資料來源**: [IEK 產業情報網](https://ieknet.iek.org.tw/ieknews/Default.aspx)\n");
     
     std::fs::write(&filename, markdown)?;
-    debug!("\n✅ 已將結果儲存至: {}", filename);
+    info!("\n✅ 已將結果儲存至: {}", filename);
     
     Ok(())
 }
@@ -553,15 +553,15 @@ fn cleanup_old_cache() -> Result<(), Box<dyn Error>> {
         .to_lowercase() == "true";
     
     if !should_remove {
-        debug!("環境變數 REMOVE_OLD_NEWS 未設定為 true，跳過清理舊快取");
+        info!("環境變數 REMOVE_OLD_NEWS 未設定為 true，跳過清理舊快取");
         return Ok(());
     }
     
-    info!("\n🧹 開始清理一週前的快取檔案...");
+    warn!("\n🧹 開始清理一週前的快取檔案...");
     
     let cache_dir = Path::new("news_cache");
     if !cache_dir.exists() {
-        debug!("快取目錄不存在，無需清理");
+        info!("快取目錄不存在，無需清理");
         return Ok(());
     }
     
@@ -590,7 +590,7 @@ fn cleanup_old_cache() -> Result<(), Box<dyn Error>> {
                         
                         match fs::remove_file(&path) {
                             Ok(_) => {
-                                debug!("  ✓ 已刪除: {} (大小: {} bytes, 修改時間: {})", 
+                                info!("  ✓ 已刪除: {} (大小: {} bytes, 修改時間: {})", 
                                     filename, 
                                     file_size,
                                     modified_datetime.format("%Y-%m-%d %H:%M:%S")
@@ -599,7 +599,7 @@ fn cleanup_old_cache() -> Result<(), Box<dyn Error>> {
                                 total_size += file_size;
                             }
                             Err(e) => {
-                                debug!("  ✗ 刪除失敗: {} (錯誤: {})", filename, e);
+                                info!("  ✗ 刪除失敗: {} (錯誤: {})", filename, e);
                             }
                         }
                     }
@@ -609,9 +609,9 @@ fn cleanup_old_cache() -> Result<(), Box<dyn Error>> {
     }
     
     if removed_count > 0 {
-        info!("✅ 清理完成：刪除了 {} 個檔案，釋放 {} bytes 空間", removed_count, total_size);
+        warn!("✅ 清理完成：刪除了 {} 個檔案，釋放 {} bytes 空間", removed_count, total_size);
     } else {
-        info!("✅ 清理完成：沒有需要刪除的舊檔案");
+        warn!("✅ 清理完成：沒有需要刪除的舊檔案");
     }
     
     Ok(())

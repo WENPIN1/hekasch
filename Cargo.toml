@@ -11,11 +11,18 @@ path = "src/main.rs"
 name = "ieknet_markdown"
 path = "src/markdown.rs"
 
+[[bin]]
+name = "stock_crawler"
+path = "src/stock_crawler.rs"
+
 [dependencies]
-reqwest = { version = "0.12", features = ["blocking"] }
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 scraper = "0.20"
 chrono = "0.4"
 tokio = { version = "1", features = ["full"] }
 regex = "1.10"
 log = "0.4"
 env_logger = "0.11"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+encoding_rs = "0.8"
