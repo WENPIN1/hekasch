@@ -8,7 +8,15 @@
 		"kiroAgent.trustedCommands": [
 			"",
 			"cargo *",
-			"git *"
-		]
+			"git *",
+			"python3 *"
+		],
+		"kiroAgent.enableDebugLogs": true,
+		"kiroAgent.trustedTools": [
+			"python3"
+		],
+		"editor.maxTokenizationLineLength": 200000,
+		"debug.console.maximumLines": 100000,
+		"notebook.output.textLineLimit": 100
 	}
 }

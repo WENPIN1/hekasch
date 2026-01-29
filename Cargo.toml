@@ -1,7 +1,11 @@
 [package]
-name = "ieknet_scraper"
+name = "stock_crawler"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "stock_crawler"
+path = "src/lib.rs"
 
 [[bin]]
 name = "ieknet_scraper"
@@ -15,6 +19,38 @@ path = "src/markdown.rs"
 name = "stock_crawler"
 path = "src/stock_crawler.rs"
 
+[[bin]]
+name = "fetch_company_info"
+path = "src/bin/fetch_company_info.rs"
+
+[[bin]]
+name = "test_fetch"
+path = "src/bin/test_fetch.rs"
+
+[[bin]]
+name = "fetch_websites"
+path = "src/bin/fetch_websites.rs"
+
+[[bin]]
+name = "process_ai_tasks"
+path = "src/bin/process_ai_tasks.rs"
+
+[[bin]]
+name = "demo_kiro"
+path = "src/bin/demo_kiro.rs"
+
+[[bin]]
+name = "batch_processor"
+path = "src/bin/batch_processor.rs"
+
+[[bin]]
+name = "show_next_batch"
+path = "src/bin/show_next_batch.rs"
+
+[[bin]]
+name = "update_batch_results"
+path = "src/bin/update_batch_results.rs"
+
 [dependencies]
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 scraper = "0.20"
@@ -26,3 +62,6 @@ env_logger = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 encoding_rs = "0.8"
+urlencoding = "2.1"
+rand = "0.8"
+minify-html = "0.15"
