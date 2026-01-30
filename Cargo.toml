@@ -51,6 +51,14 @@ path = "src/bin/show_next_batch.rs"
 name = "update_batch_results"
 path = "src/bin/update_batch_results.rs"
 
+[[bin]]
+name = "fetch_yf_company_info"
+path = "src/bin/fetch_yf_company_info.rs"
+
+[[bin]]
+name = "stock_enricher"
+path = "src/bin/stock_enricher.rs"
+
 [dependencies]
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 scraper = "0.20"
@@ -65,3 +73,4 @@ encoding_rs = "0.8"
 urlencoding = "2.1"
 rand = "0.8"
 minify-html = "0.15"
+yahoo_finance_api = "2.2"
